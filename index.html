@@ -1,0 +1,200 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#CFE6FF">
+<title>File Box</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+<style>
+@font-face{font-family:Xia;src:url(img/font.woff) format('woff');font-display:swap}
+:root{--bg:#CFE6FF;--ac:#80A8FF;--tx:#303030;--sub:#808080;--red:#FA5151;--line:#E5E5E5;--tab:56px}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font:17px/1.45 Xia,-apple-system,"PingFang SC","Helvetica Neue",sans-serif;color:var(--tx);background:#fff}
+button,input,textarea{font:inherit;color:inherit}
+button{border:0;background:none;cursor:pointer}
+.scr{position:fixed;inset:0;display:none;flex-direction:column;height:100vh;height:100dvh}
+.scr.on{display:flex}
+#login{align-items:center;justify-content:center;padding:24px;background:#fff url(img/launch.webp) center/cover}
+#login img{width:150px;margin-bottom:8px}
+#login h1{font-size:22px;font-weight:600;margin-bottom:20px;color:#5b86e0}
+#login form{width:100%;max-width:320px;display:grid;gap:12px}
+.in{width:100%;height:46px;padding:0 16px;border:2px solid var(--ac);border-radius:14px;background:rgba(255,255,255,.9);outline:0}
+.in[readonly]{background:#eef4ff;color:var(--sub)}
+.btn{height:46px;border-radius:14px;background:var(--ac);color:#fff;font-weight:600}
+.btn:disabled{opacity:.6}
+#err{color:var(--red);font-size:14px;min-height:20px;text-align:center}
+.top{height:calc(66px + env(safe-area-inset-top));padding-bottom:12px;display:flex;align-items:flex-end;justify-content:center;font-weight:600;color:#4f7cf0;background:var(--bg) url(img/topbar.webp) center/100% 100%;flex:none}
+.pages{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;background:#fff url(img/me_bg.webp) center top/cover fixed}
+.pg{display:none;padding:12px 12px 20px}.pg.on{display:block}
+.card{background:rgba(255,255,255,.92);border:2px solid var(--ac);border-radius:16px;padding:14px;margin-bottom:12px}
+.card h3{font-size:16px;margin-bottom:6px;color:#5b86e0}
+.av{width:40px;height:40px;border-radius:12px;background:var(--bg);color:#5b86e0;display:grid;place-items:center;font-weight:600;flex:none}
+.meav{width:104px;height:104px;border-radius:22px;background:var(--bg) center/cover;display:grid;place-items:center;font-size:42px;font-weight:600;color:#5b86e0;margin:4px auto 10px;border:2px solid var(--ac)}
+.fld{display:grid;gap:4px;margin-top:12px;text-align:left}.fld small,.num{color:var(--sub);font-size:13px}
+.row{display:flex;gap:8px;align-items:center}
+.chip{flex:1;height:38px;border-radius:12px;border:2px solid var(--ac);color:#5b86e0;font-weight:600}
+.chip.on{background:var(--ac);color:#fff}
+.pic{display:block;width:100%;border-radius:12px;margin:8px 0}
+.cms{margin-top:10px;display:grid;gap:6px}
+.cm{font-size:15px;word-break:break-word}.cm b{color:#5b86e0}.cm a{color:var(--red);padding:0 6px;cursor:pointer}
+.ok{color:#5b86e0;font-size:14px;min-height:20px;text-align:center;margin-top:6px}
+.tabbar{flex:none;display:flex;height:calc(var(--tab) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:var(--bg) url(img/tabbar.webp) center/cover;border-top:1px solid var(--ac)}
+.tabbar button{flex:1;display:grid;place-items:center;align-content:center;gap:1px;font-size:12px;color:#7f8fb3}
+.tabbar button[hidden]{display:none}
+.tabbar svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabbar .on{color:#4f7cf0;font-weight:600}
+</style></head><body>
+
+<section id="login" class="scr on">
+ <img src="img/mascot.webp" alt="">
+ <h1>File Box</h1>
+ <form id="lf">
+  <input class="in" id="u" placeholder="Username" autocomplete="username" autocapitalize="none" required>
+  <input class="in" id="p" type="password" placeholder="Password from Discord" autocomplete="current-password" required>
+  <div id="err"></div>
+  <button class="btn" id="lb">Sign in</button>
+ </form>
+</section>
+
+<section id="app" class="scr">
+ <header class="top"><span id="ttl">Me</span></header>
+ <div class="pages">
+  <div class="pg on" id="p0">
+   <div class="card" style="text-align:center">
+    <div class="meav" id="pav"></div>
+    <button class="chip" style="flex:none;width:130px" onclick="$('#pf').click()">Change photo</button>
+    <input type="file" id="pf" accept="image/*" hidden>
+    <div class="fld"><small>Display name</small>
+     <div class="row"><input class="in" id="pn" maxlength="20"><button class="btn" style="width:76px" id="ps">Save</button></div></div>
+    <div class="fld"><small>Username, cannot be changed</small><input class="in" id="pu" readonly></div>
+    <div class="ok" id="ok"></div>
+   </div>
+   <button class="chip" style="width:100%;height:44px" id="lo">Log out</button>
+  </div>
+  <div class="pg" id="p1">
+   <div class="card" id="pform" hidden><h3>New post</h3>
+    <div class="fld" style="margin-top:0"><input class="in" id="nti" maxlength="80" placeholder="Title"></div>
+    <div class="fld"><input type="file" id="nim" accept="image/*"></div>
+    <div class="fld"><input class="in" id="npw" placeholder="Password for this post"></div>
+    <div class="fld"><input class="in" id="nl" placeholder="File link"></div>
+    <button class="btn" style="width:100%;margin-top:12px" id="npb">Post</button>
+    <div class="ok" id="nok"></div></div>
+   <div id="plist"></div>
+  </div>
+  <div class="pg" id="p2"><div class="card"><h3>Chats</h3><p class="num">Bot, DM and Notices come in the next step.</p></div></div>
+  <div class="pg" id="p3"><div class="card"><h3>Main</h3><p class="num">Notices, activity, online list and kick come in a later step.</p></div></div>
+ </div>
+ <nav class="tabbar">
+  <button class="on" data-t="0"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1-4 4-6 8-6s7 2 8 6"/></svg>Me</button>
+  <button data-t="1"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>Discover</button>
+  <button data-t="2"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>Chats</button>
+  <button data-t="3" id="mtab" hidden><svg viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0112 0v6l2 2H4z"/><path d="M10 21h4"/></svg>Main</button>
+ </nav>
+</section>
+
+<script>
+const SB_URL='https://ecrcwadrzmnmhfwfwjms.supabase.co',SB_KEY='sb_publishable_vVvFcFshfjIAT-ta5Lvubw_iZqTlq8U';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pub=p=>sb.storage.from('posts').getPublicUrl(p).data.publicUrl;
+let me=null,hb=null;const open=new Set();
+
+function jpeg(f,max,sq){return new Promise((ok,no)=>{const im=new Image();im.onload=()=>{
+ let sx=0,sy=0,sw=im.width,sh=im.height;if(sq){const m=Math.min(sw,sh);sx=(sw-m)/2;sy=(sh-m)/2;sw=sh=m}
+ const k=Math.min(1,max/Math.max(sw,sh)),c=document.createElement('canvas');c.width=Math.round(sw*k);c.height=Math.round(sh*k);
+ c.getContext('2d').drawImage(im,sx,sy,sw,sh,0,0,c.width,c.height);c.toBlob(b=>b?ok(b):no(new Error('Image error')),'image/jpeg',.82)};
+ im.onerror=()=>no(new Error('Cannot read image'));im.src=URL.createObjectURL(f)})}
+
+/* ---------- login ---------- */
+$('#lf').onsubmit=async e=>{e.preventDefault();
+ const u=$('#u').value.trim().toLowerCase(),p=$('#p').value;$('#err').textContent='';$('#lb').disabled=true;
+ try{
+  const r=await fetch(SB_URL+'/functions/v1/login',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY},
+   body:JSON.stringify({username:u,password:p,key:localStorage.getItem('fbk_'+u)||''})});
+  const j=await r.json();
+  if(!r.ok){$('#err').textContent=j.error||'Sign in failed';return}
+  if(j.key)localStorage.setItem('fbk_'+u,j.key);
+  const {error}=await sb.auth.verifyOtp({token_hash:j.token_hash,type:'email'});
+  if(error){$('#err').textContent='Sign in failed';return}
+  $('#p').value='';await boot();
+ }catch(x){$('#err').textContent='Network error. Try again.'}
+ finally{$('#lb').disabled=false}};
+
+async function boot(){
+ const {data:{session}}=await sb.auth.getSession();
+ if(!session){go('login');return}
+ const {data:p}=await sb.from('profiles').select('*').eq('id',session.user.id).maybeSingle();
+ if(!p||p.banned){await sb.auth.signOut();go('login');$('#err').textContent='This account is blocked';return}
+ me=p;drawMe();$('#mtab').hidden=p.role!=='owner';$('#pform').hidden=p.role!=='owner';
+ go('app');beat();clearInterval(hb);hb=setInterval(beat,60000)}
+function go(id){['login','app'].forEach(x=>$('#'+x).classList.toggle('on',x===id))}
+async function beat(){
+ const {data}=await sb.from('profiles').update({last_seen:new Date().toISOString()}).eq('id',me.id).select('id');
+ if(!data||!data.length){await sb.auth.signOut();location.reload()}}
+$('#lo').onclick=()=>sb.auth.signOut().then(()=>location.reload());
+
+/* ---------- Me ---------- */
+function drawMe(){$('#pn').value=me.display_name;$('#pu').value=me.username;const a=$('#pav');
+ a.style.backgroundImage=me.avatar_url?'url('+me.avatar_url+')':'';a.textContent=me.avatar_url?'':me.display_name[0].toUpperCase()}
+$('#ps').onclick=async()=>{const v=$('#pn').value.trim();if(!v){$('#ok').textContent='Name cannot be empty';return}
+ const {error}=await sb.from('profiles').update({display_name:v}).eq('id',me.id);
+ if(error){$('#ok').textContent='Could not save';return}me.display_name=v;drawMe();$('#ok').textContent='Saved'};
+$('#pf').onchange=async e=>{const f=e.target.files[0];if(!f)return;$('#ok').textContent='Uploading...';
+ try{const b=await jpeg(f,160,true),path=me.id+'/a.jpg';
+  const u=await sb.storage.from('avatars').upload(path,b,{upsert:true,contentType:'image/jpeg'});if(u.error)throw u.error;
+  const url=sb.storage.from('avatars').getPublicUrl(path).data.publicUrl+'?v='+Date.now();
+  const r=await sb.from('profiles').update({avatar_url:url}).eq('id',me.id);if(r.error)throw r.error;
+  me.avatar_url=url;drawMe();$('#ok').textContent='Photo updated'}catch(x){$('#ok').textContent='Upload failed'}};
+
+/* ---------- tabs ---------- */
+const titles=['Me','Discover','Chats','Main'];
+document.querySelectorAll('.tabbar button').forEach(b=>b.onclick=()=>{const t=+b.dataset.t;
+ document.querySelectorAll('.tabbar button').forEach(x=>x.classList.toggle('on',x===b));
+ document.querySelectorAll('.pg').forEach((p,i)=>p.classList.toggle('on',i===t));
+ $('#ttl').textContent=titles[t];if(t===1)load()});
+
+/* ---------- Discover ---------- */
+async function load(){
+ const [a,b,c,d]=await Promise.all([
+  sb.from('posts').select('*').order('no',{ascending:false}),
+  sb.from('likes').select('post_no,user_id'),
+  sb.from('comments').select('id,post_no,user_id,body').order('created_at'),
+  sb.from('profiles').select('id,display_name')]);
+ const P={};(d.data||[]).forEach(p=>P[p.id]=p.display_name);const owner=me.role==='owner';
+ $('#plist').innerHTML=(a.data||[]).map(p=>{
+  const L=(b.data||[]).filter(x=>x.post_no===p.no),mine=L.some(x=>x.user_id===me.id),C=(c.data||[]).filter(x=>x.post_no===p.no);
+  return `<div class="card"><div class="num">Post no. ${p.no}</div><b>${esc(p.title)}</b>
+  ${p.image_path?`<img class="pic" src="${esc(pub(p.image_path))}" alt="">`:''}
+  <div class="row"><button class="chip${mine?' on':''}" data-a="like" data-n="${p.no}">Like ${L.length}</button>
+  <button class="chip" data-a="cm" data-n="${p.no}">Comments ${C.length}</button>
+  ${owner?`<button class="chip" data-a="del" data-n="${p.no}" style="flex:none;width:76px">Delete</button>`:''}</div>
+  ${open.has(p.no)?`<div class="cms">${C.map(x=>`<div class="cm"><b>${esc(P[x.user_id]||'?')}</b> ${esc(x.body)}${x.user_id===me.id||owner?`<a data-a="dc" data-i="${x.id}">×</a>`:''}</div>`).join('')}
+  <div class="row"><input class="in" id="ci${p.no}" maxlength="500" placeholder="Write a comment"><button class="btn" style="width:70px" data-a="sc" data-n="${p.no}">Send</button></div></div>`:''}</div>`
+ }).join('')||'<p class="num" style="text-align:center">No posts yet</p>'}
+
+$('#plist').onclick=async e=>{const t=e.target.closest('[data-a]');if(!t)return;const n=+t.dataset.n,a=t.dataset.a;
+ if(a==='cm'){open.has(n)?open.delete(n):open.add(n)}
+ else if(a==='like'){await(t.classList.contains('on')?sb.from('likes').delete().eq('post_no',n).eq('user_id',me.id):sb.from('likes').insert({post_no:n,user_id:me.id}))}
+ else if(a==='sc'){const v=$('#ci'+n).value.trim();if(!v)return;await sb.from('comments').insert({post_no:n,user_id:me.id,body:v})}
+ else if(a==='dc'){await sb.from('comments').delete().eq('id',+t.dataset.i)}
+ else if(a==='del'){if(!confirm('Delete post '+n+'?'))return;
+  const {data}=await sb.from('posts').select('image_path').eq('no',n).maybeSingle();
+  if(data&&data.image_path)await sb.storage.from('posts').remove([data.image_path]);
+  await sb.from('posts').delete().eq('no',n)}
+ load()};
+
+$('#npb').onclick=async()=>{const t=$('#nti').value.trim(),f=$('#nim').files[0],pw=$('#npw').value,l=$('#nl').value.trim();
+ if(!t||!pw||!l){$('#nok').textContent='Title, password and link are required';return}
+ $('#npb').disabled=true;$('#nok').textContent='Posting...';
+ try{let path=null;
+  if(f){const b=await jpeg(f,1080,false);path=Date.now()+'.jpg';
+   const u=await sb.storage.from('posts').upload(path,b,{contentType:'image/jpeg'});if(u.error)throw u.error}
+  const {data,error}=await sb.from('posts').insert({title:t,image_path:path}).select('no').single();if(error)throw error;
+  const r=await sb.rpc('set_post_secret',{p_no:data.no,p_pw:pw,p_link:l});
+  if(r.error){await sb.from('posts').delete().eq('no',data.no);throw r.error}
+  ['#nti','#npw','#nl'].forEach(s=>$(s).value='');$('#nim').value='';$('#nok').textContent='Posted as no. '+data.no;load();
+ }catch(x){$('#nok').textContent='Failed: '+(x.message||'error')}
+ $('#npb').disabled=false};
+
+boot();
+</script></body></html>
