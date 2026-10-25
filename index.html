@@ -121,6 +121,26 @@ textarea.in{padding:10px 12px;height:90px;resize:none}
 .pvb{display:grid;justify-items:center;gap:4px;padding:30px 24px;text-align:center}
 .pvb .bio{margin-top:10px;color:var(--st);white-space:pre-wrap;word-break:break-word}
 .scr,#cv,#pv{top:var(--vt,0px);bottom:auto;height:var(--vh,100dvh)}
+
+/* ---- v5 additions ---- */
+html,body{overscroll-behavior:none}
+body.kb .tabbar{display:none}
+.m{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.ck{display:none;flex:none;align-self:center;width:20px;height:20px;border:1.5px solid var(--st);border-radius:50%}
+#cm.selm .ck{display:block}
+.m.on .ck{background:var(--st);box-shadow:inset 0 0 0 3px var(--bgc)}
+.m.on .b{opacity:.7}
+#cm.selm .m{cursor:pointer}
+.cin .snd{width:42px;padding:0;border:0;border-image:none;background:none;display:grid;place-items:center;flex:none}
+.cin .ti{width:26px;height:26px;opacity:.95}
+.ib .ti{margin:auto}
+#selbar{align-items:center}
+#sheet{position:fixed;inset:0;z-index:60;display:none;align-items:flex-end;background:rgba(0,0,0,.35)}
+#sheet.on{display:flex}
+#sheet .box{width:100%;display:grid;gap:8px;padding:12px 12px calc(12px + env(safe-area-inset-bottom));background:var(--bgc)}
+#sheet .chip{height:44px}
+.pstH .chip{margin-left:0}.pstH .pbtn{margin-left:auto;display:flex;gap:8px}
+.cbox[hidden]{display:none}
 </style></head><body>
 <div id="wall"></div>
 
@@ -158,14 +178,14 @@ textarea.in{padding:10px 12px;height:90px;resize:none}
   </div>
   <div class="pg" id="p1">
    <div class="newbar" id="newbar" hidden><button class="chip" id="nt0">+ New post</button></div>
-   <div class="card" id="pform" hidden><h3>New post</h3>
+   <div class="card" id="pform" hidden><h3 id="pfh">New post</h3>
     <input class="in" id="nti" maxlength="80" placeholder="Title">
     <div class="fld"><div class="row"><button type="button" class="chip" id="nib">Choose image</button><small class="num" id="nin"></small></div></div>
     <input type="file" id="nim" accept="image/*" hidden>
     <div class="fld"><input class="in" id="npw" placeholder="Password for this post"></div>
     <div class="fld"><div class="row"><input class="in" id="nl" placeholder="File link"><button type="button" class="chip" id="nfb">Choose file</button></div><small class="num" id="nfn"></small></div>
     <input type="file" id="nfl" hidden>
-    <button class="btn" style="width:100%;margin-top:12px" id="npb">Post</button><div class="ok" id="nok"></div></div>
+    <button class="btn" style="width:100%;margin-top:12px" id="npb">Post</button><button type="button" class="chip" style="width:100%;margin-top:8px" id="npc" hidden>Cancel</button><div class="ok" id="nok"></div></div>
    <div id="plist"></div>
   </div>
   <div class="pg on" id="p2"><div id="cl"></div></div>
@@ -188,9 +208,11 @@ textarea.in{padding:10px 12px;height:90px;resize:none}
 <section id="cv">
  <div class="ch"><button class="bk" id="cb"><i class="bkd"></i><span id="bkn" hidden></span></button><b id="cn"></b></div>
  <div id="cm"></div><div id="cerr"></div>
- <form id="cf" class="cin"><button type="button" class="ib" id="cimb" aria-label="Photo"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg></button><input type="file" id="cim" accept="image/*" hidden><div id="ci" contenteditable="true" data-ph="" autocapitalize="none" spellcheck="false"></div><button type="submit" class="snd">Send</button></form>
+ <form id="cf" class="cin"><button type="button" class="ib" id="cimb" aria-label="Photo"><i class="ti i-post"></i></button><input type="file" id="cim" accept="image/*" hidden><div id="ci" contenteditable="true" data-ph="" autocapitalize="none" spellcheck="false"></div><button type="submit" class="snd" aria-label="Send"><i class="ti i-chat"></i></button></form>
+ <div id="selbar" class="cin" hidden><button type="button" class="chip" id="selx">Cancel</button><span class="num" id="selc" style="flex:1;text-align:center"></span><button type="button" class="chip" id="seld">Delete</button></div>
 </section>
 
+<div id="sheet"><div class="box"><button class="btn" id="sh-del">Delete</button><button class="btn" id="sh-sel">Select</button><button class="chip" id="sh-x">Cancel</button></div></div>
 <section id="pv">
  <div class="ch"><button class="bk" id="pb"><i class="bkd"></i></button><b>Profile</b></div>
  <div class="pvb"><div class="meav" id="pvav" style="cursor:default"></div><div class="nm" id="pvn"></div><div class="num" id="pvu"></div><div class="bio" id="pvbio"></div></div>
@@ -205,9 +227,12 @@ const pub=p=>sb.storage.from('posts').getPublicUrl(p).data.publicUrl;
 const cssu=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim().replace(/^url\(["']?|["']?\)$/g,'');
 /* keep the screen glued to the visible area (keyboard), no zoom */
 const vv=window.visualViewport;
-function fit(){const h=vv?vv.height:innerHeight,tp=vv?vv.offsetTop:0,r=document.documentElement.style;r.setProperty('--vh',h+'px');r.setProperty('--vt',tp+'px');document.body.classList.toggle('kb',innerHeight-h>120)}
+function fit(){cancelAnimationFrame(fit.r);fit.r=requestAnimationFrame(()=>{const h=vv?vv.height:innerHeight,tp=vv?vv.offsetTop:0,r=document.documentElement.style,a=document.activeElement,ed=!!a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.isContentEditable);
+ r.setProperty('--vh',h+'px');r.setProperty('--vt',tp+'px');document.body.classList.toggle('kb',ed||innerHeight-h>120);
+ if(typeof cv!=='undefined'&&cv&&pinned){const b=document.getElementById('cm');b.scrollTop=b.scrollHeight}})}
 if(vv){vv.addEventListener('resize',fit);vv.addEventListener('scroll',fit)}addEventListener('resize',fit);fit();
-document.addEventListener('focusin',()=>{setTimeout(()=>{scrollTo(0,0);fit()},60);setTimeout(()=>{scrollTo(0,0);fit()},350)});
+document.addEventListener('focusin',()=>{fit();[60,350,700].forEach(t=>setTimeout(()=>{scrollTo(0,0);fit();if(t===350){const a=document.activeElement;if(a&&/^ci\d+$/.test(a.id||''))a.scrollIntoView({block:'center'})}},t))});
+document.addEventListener('focusout',()=>setTimeout(()=>{scrollTo(0,0);fit()},120));
 ['gesturestart','gesturechange','gestureend'].forEach(n=>document.addEventListener(n,e=>e.preventDefault()));
 const BOT='(\uFF61+\uFF65`\u03C9\uFF65\u00B4)';
 const IC_BOT=cssu('--ic-bot'),IC_NOT=cssu('--ic-noti');
@@ -234,6 +259,19 @@ function jpeg(f,max,sq){return new Promise((ok,no)=>{const im=new Image();im.onl
  let sx=0,sy=0,sw=im.width,sh=im.height;if(sq){const m=Math.min(sw,sh);sx=(sw-m)/2;sy=(sh-m)/2;sw=sh=m}
  const k=Math.min(1,max/Math.max(sw,sh)),c=document.createElement('canvas');c.width=Math.round(sw*k);c.height=Math.round(sh*k);
  c.getContext('2d').drawImage(im,sx,sy,sw,sh,0,0,c.width,c.height);c.toBlob(b=>b?ok(b):no(new Error('Image error')),'image/jpeg',.82)};
+ im.onerror=()=>no(new Error('Cannot read image'));im.src=URL.createObjectURL(f)})}
+
+/* png stays png, gif stays gif (animated), everything else -> jpeg */
+function prep(f,max,sq){return new Promise((ok,no)=>{
+ if(f.type==='image/gif'){if(f.size>8*1048576)return no(new Error('GIF is over 8 MB'));return ok({b:f,ext:'gif',type:'image/gif'})}
+ const png=f.type==='image/png',im=new Image();
+ im.onload=()=>{let sx=0,sy=0,sw=im.width,sh=im.height;if(sq){const m=Math.min(sw,sh);sx=(sw-m)/2;sy=(sh-m)/2;sw=sh=m}
+  const k=Math.min(1,max/Math.max(sw,sh));
+  if(png&&!sq&&k===1&&f.size<4*1048576)return ok({b:f,ext:'png',type:'image/png'});
+  const c=document.createElement('canvas');c.width=Math.round(sw*k);c.height=Math.round(sh*k);
+  c.getContext('2d').drawImage(im,sx,sy,sw,sh,0,0,c.width,c.height);
+  const ty=png?'image/png':'image/jpeg';
+  c.toBlob(b=>b?ok({b,ext:png?'png':'jpg',type:ty}):no(new Error('Image error')),ty,.82)};
  im.onerror=()=>no(new Error('Cannot read image'));im.src=URL.createObjectURL(f)})}
 
 /* ---------- login ---------- */
@@ -275,12 +313,13 @@ $('#lfav').onclick=()=>{$('#favp').hidden=!$('#favp').hidden;if(!$('#favp').hidd
 function segs(){const m=localStorage.getItem('fbt')||'auto';document.querySelectorAll('[data-th]').forEach(b=>b.classList.toggle('on',b.dataset.th===m))}
 document.querySelectorAll('[data-th]').forEach(b=>b.onclick=()=>{localStorage.setItem('fbt',b.dataset.th);applyTheme();segs()});segs();
 $('#lo').onclick=()=>sb.auth.signOut().then(()=>location.reload());
-$('#pf').onchange=async e=>{const f=e.target.files[0];if(!f)return;$('#ok').textContent='Uploading...';
- try{const b=await jpeg(f,240,true),path=me.id+'/a.jpg';
-  const u=await sb.storage.from('avatars').upload(path,b,{upsert:true,contentType:'image/jpeg'});if(u.error)throw u.error;
-  const url=sb.storage.from('avatars').getPublicUrl(path).data.publicUrl+'?v='+Date.now();
+$('#pf').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;$('#ok').textContent='Uploading...';
+ try{const p=await prep(f,240,true),dir=me.id+'/',path=dir+'a'+Date.now()+'.'+p.ext;
+  const u=await sb.storage.from('avatars').upload(path,p.b,{contentType:p.type,upsert:true});if(u.error)throw u.error;
+  const url=sb.storage.from('avatars').getPublicUrl(path).data.publicUrl;
   const r=await sb.from('profiles').update({avatar_url:url}).eq('id',me.id);if(r.error)throw r.error;
-  me.avatar_url=url;drawMe();$('#ok').textContent='Photo updated'}catch(x){$('#ok').textContent='Upload failed'}};
+  try{const ls=await sb.storage.from('avatars').list(me.id);const old=(ls.data||[]).map(x=>dir+x.name).filter(x=>x!==path);if(old.length)await sb.storage.from('avatars').remove(old)}catch(_){}
+  me.avatar_url=url;drawMe();$('#ok').textContent='Photo updated'}catch(x){$('#ok').textContent=(x&&x.message&&/GIF/.test(x.message))?x.message:'Upload failed'}};
 
 /* favourite: photos / liked posts / my comments */
 let favT='ph';
@@ -319,60 +358,91 @@ document.querySelectorAll('.tabbar button').forEach(b=>b.onclick=()=>tab(+b.data
 async function goPost(n){show(1);await load();const el=document.getElementById('post'+n);if(el)el.scrollIntoView({block:'start'})}
 
 /* ---------- Post ---------- */
+let POSTS={},editNo=null;
 const cmH=(x,P,isO,rp,n)=>`<div class="cm${rp?' rp':''}"><b data-a="pf" data-u="${esc(x.user_id)}">${esc(P[x.user_id]||'?')}</b>${esc(x.body)}<a data-a="rc" data-n="${n}" data-i="${x.id}" data-p="${x.parent_id||''}" data-nm="${esc(P[x.user_id]||'')}">reply</a>${x.user_id===me.id||isO?`<a data-a="dc" data-i="${x.id}">delete</a>`:''}</div>`;
 async function load(){
+ const sc=document.querySelector('.pages'),y=sc.scrollTop,dr={};
+ document.querySelectorAll('#plist input[id^="ci"]').forEach(i=>{if(i.value)dr[i.id]=i.value});
  const [a,b,c,d]=await Promise.all([
   sb.from('posts').select('*').order('no',{ascending:false}),
   sb.from('likes').select('post_no,user_id'),
   sb.from('comments').select('*').order('created_at'),
   sb.from('profiles').select('id,display_name,avatar_url,role')]);
+ POSTS={};(a.data||[]).forEach(p=>POSTS[p.no]=p);
  const P={};(d.data||[]).forEach(p=>P[p.id]=p.display_name);const ow=(d.data||[]).find(p=>p.role==='owner')||{},isO=me.role==='owner';
  $('#plist').innerHTML=(a.data||[]).map(p=>{
-  const L=(b.data||[]).filter(x=>x.post_no===p.no),mine=L.some(x=>x.user_id===me.id),C=(c.data||[]).filter(x=>x.post_no===p.no),o=open.has(p.no);
-  return `<article class="post" id="post${p.no}"><div class="pstH" data-a="pf" data-u="${esc(ow.id||'')}">${avHTML(ow.avatar_url,ow.display_name)}<b>${esc(ow.display_name||'')}</b>${isO?`<button class="chip s" data-a="del" data-n="${p.no}">Delete</button>`:''}</div>
+  const L=(b.data||[]).filter(x=>x.post_no===p.no),mine=L.some(x=>x.user_id===me.id),C=(c.data||[]).filter(x=>x.post_no===p.no),o=open.has(p.no),rp=replyTo&&replyTo.n===p.no;
+  return `<article class="post" id="post${p.no}"><div class="pstH" data-a="pf" data-u="${esc(ow.id||'')}">${avHTML(ow.avatar_url,ow.display_name)}<b>${esc(ow.display_name||'')}</b>${isO?`<span class="pbtn"><button class="chip s" data-a="edit" data-n="${p.no}">Edit</button><button class="chip s" data-a="del" data-n="${p.no}">Delete</button></span>`:''}</div>
   ${p.image_path?`<img class="pic" src="${esc(pub(p.image_path))}" alt="" loading="lazy">`:''}
   <div class="act"><button class="${mine?'on':''}" data-a="like" data-n="${p.no}">${HEART}</button><button data-a="cm" data-n="${p.no}">${CMT}</button></div>
   <div class="lk">${L.length} likes</div>
   <div class="cap"><b>${esc(ow.display_name||'')}</b>${esc(p.title)}</div>
-  ${o?`<div class="cms">${C.filter(x=>!x.parent_id).map(x=>cmH(x,P,isO,false,p.no)+C.filter(y=>y.parent_id===x.id).map(y=>cmH(y,P,isO,true,p.no)).join('')).join('')}</div>
-  <div class="add"><input class="in" id="ci${p.no}" maxlength="500" placeholder="${replyTo&&replyTo.n===p.no?'Reply to '+esc(replyTo.nm):'Add a comment'}"><button data-a="sc" data-n="${p.no}">Post</button>${replyTo&&replyTo.n===p.no?`<button data-a="xr" data-n="${p.no}">&#215;</button>`:''}</div>`
-  :(C.length?`<div class="cms"><a class="more" data-a="cm" data-n="${p.no}">View all ${C.length} comments</a></div>`:'')}</article>`
- }).join('')||'<p class="empty">No posts yet</p>'}
+  ${C.length?`<div class="cms" id="mr${p.no}"${o?' hidden':''}><a class="more" data-a="cm" data-n="${p.no}">View all ${C.length} comments</a></div>`:''}
+  <div class="cbox" id="cb${p.no}"${o?'':' hidden'}><div class="cms">${C.filter(x=>!x.parent_id).map(x=>cmH(x,P,isO,false,p.no)+C.filter(y=>y.parent_id===x.id).map(y=>cmH(y,P,isO,true,p.no)).join('')).join('')}</div>
+  <div class="add"><input class="in" id="ci${p.no}" maxlength="500" placeholder="${rp?'Reply to '+esc(replyTo.nm):'Add a comment'}"><button data-a="sc" data-n="${p.no}">Post</button><button data-a="xr" data-n="${p.no}" id="xr${p.no}"${rp?'':' hidden'}>&#215;</button></div></div></article>`
+ }).join('')||'<p class="empty">No posts yet</p>';
+ Object.keys(dr).forEach(id=>{const i=document.getElementById(id);if(i)i.value=dr[id]});
+ sc.scrollTop=y}
 $('#plist').onclick=async e=>{const t=e.target.closest('[data-a]');if(!t)return;const n=+t.dataset.n,a=t.dataset.a;
  if(a==='pf'){showProfile(t.dataset.u);return}
- if(a==='cm'){open.has(n)?open.delete(n):open.add(n)}
- else if(a==='like'){await(t.classList.contains('on')?sb.from('likes').delete().eq('post_no',n).eq('user_id',me.id):sb.from('likes').insert({post_no:n,user_id:me.id}))}
- else if(a==='rc'){const rp=!!t.dataset.p;replyTo={n,root:rp?+t.dataset.p:+t.dataset.i,nm:t.dataset.nm,rp};open.add(n)}
- else if(a==='xr'){replyTo=null}
+ if(a==='edit'){openForm(n);return}
+ if(a==='cm'){const b=$('#cb'+n);if(!b)return;b.hidden=!b.hidden;b.hidden?open.delete(n):open.add(n);const m=$('#mr'+n);if(m)m.hidden=!b.hidden;return}
+ if(a==='rc'){const rp=!!t.dataset.p;replyTo={n,root:rp?+t.dataset.p:+t.dataset.i,nm:t.dataset.nm,rp};open.add(n);
+  const i=$('#ci'+n);if(i){i.placeholder='Reply to '+t.dataset.nm;const x=$('#xr'+n);if(x)x.hidden=false;i.focus()}return}
+ if(a==='xr'){replyTo=null;const i=$('#ci'+n);if(i)i.placeholder='Add a comment';t.hidden=true;return}
+ if(a==='like'){await(t.classList.contains('on')?sb.from('likes').delete().eq('post_no',n).eq('user_id',me.id):sb.from('likes').insert({post_no:n,user_id:me.id}))}
  else if(a==='sc'){const v=$('#ci'+n).value.trim();if(!v)return;const row={post_no:n,user_id:me.id,body:v};
   if(replyTo&&replyTo.n===n){row.parent_id=replyTo.root;if(replyTo.rp)row.body='@'+replyTo.nm+' '+v}
-  const r=await sb.from('comments').insert(row);if(r.error){alert('Could not post (replies need the new SQL).');return}replyTo=null}
+  $('#ci'+n).value='';
+  const r=await sb.from('comments').insert(row);if(r.error){$('#ci'+n).value=v;alert('Could not post (replies need the new SQL).');return}replyTo=null}
  else if(a==='dc'){await sb.from('comments').delete().eq('id',+t.dataset.i)}
  else if(a==='del'){if(!confirm('Delete this post?'))return;
   const {data}=await sb.from('posts').select('image_path').eq('no',n).maybeSingle();
   if(data&&data.image_path)await sb.storage.from('posts').remove([data.image_path]);
-  await sb.from('posts').delete().eq('no',n)}
- await load();if(a==='rc'){const i=$('#ci'+n);if(i)i.focus()}};
-$('#nt0').onclick=()=>{$('#pform').hidden=!$('#pform').hidden};
+  await sb.from('posts').delete().eq('no',n);if(editNo===n)closeForm()}
+ await load()};
+
+/* new / edit post form */
+function openForm(no){
+ editNo=no||null;$('#pform').hidden=false;
+ $('#pfh').textContent=editNo?'Edit post':'New post';$('#npb').textContent=editNo?'Save':'Post';$('#npc').hidden=!editNo;
+ $('#nti').value=editNo?(POSTS[no]||{}).title||'':'';
+ $('#nim').value='';$('#nin').textContent=editNo&&(POSTS[no]||{}).image_path?'Current image is kept':'';
+ $('#nfl').value='';$('#nfn').textContent='';$('#nl').value='';$('#npw').value='';
+ $('#npw').placeholder=editNo?'New password (empty = keep)':'Password for this post';
+ $('#nl').placeholder=editNo?'New link (empty = keep)':'File link';
+ $('#nok').textContent='';document.querySelector('.pages').scrollTop=0}
+function closeForm(){editNo=null;$('#pform').hidden=true;['#nti','#npw','#nl'].forEach(s=>$(s).value='');$('#nim').value='';$('#nin').textContent='';$('#nfl').value='';$('#nfn').textContent='';$('#nok').textContent=''}
+$('#nt0').onclick=()=>{$('#pform').hidden||editNo?(editNo?openForm():closeForm()):openForm()};
+$('#npc').onclick=closeForm;
 $('#nib').onclick=()=>$('#nim').click();
 $('#nim').onchange=()=>{const f=$('#nim').files[0];$('#nin').textContent=f?f.name:''};
 $('#nfb').onclick=()=>$('#nfl').click();
 $('#nfl').onchange=()=>{const f=$('#nfl').files[0];$('#nfn').textContent=f?f.name+' ('+(f.size/1048576).toFixed(1)+' MB)':''};
-$('#npb').onclick=async()=>{const t=$('#nti').value.trim(),f=$('#nim').files[0],F=$('#nfl').files[0],pw=$('#npw').value;let l=$('#nl').value.trim();
- if(!t||!pw||(!l&&!F)){$('#nok').textContent='Title, password and a link or file are required';return}
+$('#npb').onclick=async()=>{const t=$('#nti').value.trim(),f=$('#nim').files[0],F=$('#nfl').files[0],pw=$('#npw').value,ed=editNo;let l=$('#nl').value.trim();
+ if(!t){$('#nok').textContent='Title is required';return}
+ if(!ed&&(!pw||(!l&&!F))){$('#nok').textContent='Title, password and a link or file are required';return}
+ if(ed&&(!!pw)!==(!!(l||F))){$('#nok').textContent='Change password and link together, or leave both empty';return}
  if(F&&F.size>50*1048576){$('#nok').textContent='File is over 50 MB';return}
- $('#npb').disabled=true;$('#nok').textContent='Posting...';
+ $('#npb').disabled=true;$('#nok').textContent=ed?'Saving...':'Posting...';
  try{let path=null;
   if(F){$('#nok').textContent='Uploading file...';
    const safe=((F.name||'file').replace(/[^A-Za-z0-9._-]+/g,'_').slice(-80))||'file',key=Date.now().toString(36)+Math.random().toString(36).slice(2,10)+'/'+safe;
    const fu=await sb.storage.from('files').upload(key,F,{contentType:F.type||'application/octet-stream'});if(fu.error)throw fu.error;
    l=sb.storage.from('files').getPublicUrl(key).data.publicUrl}
-  if(f){const b=await jpeg(f,1080,false);path=Date.now()+'.jpg';
-   const u=await sb.storage.from('posts').upload(path,b,{contentType:'image/jpeg'});if(u.error)throw u.error}
-  const {data,error}=await sb.from('posts').insert({title:t,image_path:path}).select('no').single();if(error)throw error;
-  const r=await sb.rpc('set_post_secret',{p_no:data.no,p_pw:pw,p_link:l});
-  if(r.error){await sb.from('posts').delete().eq('no',data.no);throw r.error}
-  ['#nti','#npw','#nl'].forEach(s=>$(s).value='');$('#nim').value='';$('#nin').textContent='';$('#nfl').value='';$('#nfn').textContent='';$('#nok').textContent='';$('#pform').hidden=true;load();
+  if(f){const p=await prep(f,1080,false);path=Date.now()+'.'+p.ext;
+   const u=await sb.storage.from('posts').upload(path,p.b,{contentType:p.type});if(u.error)throw u.error}
+  if(ed){
+   const upd={title:t};let old=null;if(path){old=(POSTS[ed]||{}).image_path;upd.image_path=path}
+   const r=await sb.from('posts').update(upd).eq('no',ed).select('no');
+   if(r.error||!r.data||!r.data.length)throw new Error('cannot update post (needs an update policy)');
+   if(pw&&l){const s=await sb.rpc('set_post_secret',{p_no:ed,p_pw:pw,p_link:l});if(s.error)throw s.error}
+   if(old)await sb.storage.from('posts').remove([old]);
+  }else{
+   const {data,error}=await sb.from('posts').insert({title:t,image_path:path}).select('no').single();if(error)throw error;
+   const r=await sb.rpc('set_post_secret',{p_no:data.no,p_pw:pw,p_link:l});
+   if(r.error){await sb.from('posts').delete().eq('no',data.no);throw r.error}}
+  closeForm();load();
  }catch(x){$('#nok').textContent='Failed: '+(x.message||'error')}
  $('#npb').disabled=false};
 
@@ -390,45 +460,77 @@ async function chats(){
  $('#cl').innerHTML=rows.map(r=>`<div class="row${unread.has(r.id)?' un':''}" data-c="${esc(r.id)}" data-n="${esc(r.name)}" data-i="${esc(r.img||'')}" data-p="${esc(r.pid||'')}">${r.ic?`<i class="lic ${r.ic}" style="margin:0 12px"></i>`:avHTML(r.img,r.name)}<div class="rt"><div class="nm">${esc(r.name)}</div>${r.pv?`<div class="pv">${esc(r.pv)}</div>`:''}</div><i class="nd"></i></div>`).join('');paintUnread()}
 $('#cl').onclick=e=>{const t=e.target.closest('[data-c]');if(t)openC(t.dataset.c,t.dataset.n,t.dataset.i,t.dataset.p)};
 $('#cb').onclick=()=>{if(cv)markRead(cv.id);chats()};
+let selMode=false,selSet=new Set(),pressT=null,pressXY=null,longFired=false,pinned=true,shK=null,shAt=0;
 function openC(id,name,img,pid){
- cv={id,name,img:img||null,pid:pid||''};sel=null;lastN=-1;lastSig='';$('#cn').textContent=name;$('#cerr').textContent='';$('#cm').innerHTML='';
- $('#cv').classList.add('on');$('#cf').hidden=id==='not';$('#cimb').hidden=!id.startsWith('dm:');$('#ci').textContent='';markRead(id);
+ cv={id,name,img:img||null,pid:pid||''};selMode=false;selSet=new Set();pinned=true;lastN=-1;lastSig='';
+ $('#cn').textContent=name;$('#cerr').textContent='';$('#cm').innerHTML='';
+ $('#cv').classList.add('on');$('#cimb').hidden=!id.startsWith('dm:');$('#ci').textContent='';paintSel();markRead(id);
+ clearInterval(cvT);
  if(id==='bot'){bm=[];draw([])}else if(id==='not')loadN();else{loadDM();cvT=setInterval(loadDM,4000)}}
-function closeC(){cv=null;clearInterval(cvT);$('#cv').classList.remove('on')}
+function closeC(){cv=null;clearInterval(cvT);selMode=false;selSet=new Set();$('#selbar').hidden=true;$('#cm').classList.remove('selm');$('#sheet').classList.remove('on');$('#cv').classList.remove('on')}
 function err(t){$('#cerr').textContent=t;setTimeout(()=>{$('#cerr').textContent=''},3000)}
 const linkHTML=l=>/^https?:\/\//i.test(l)?`<a href="${esc(l)}" target="_blank" rel="noopener">${esc(l)}</a>`:esc(l);
 function stamp(ms){const d=new Date(ms),t=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:false}),days=(Date.now()-ms)/864e5;
  return days<1&&d.getDate()===new Date().getDate()?t:days<6?d.toLocaleDateString('en',{weekday:'short'})+' '+t:d.toLocaleDateString()+' '+t}
+function near(){const b=$('#cm');return b.scrollHeight-b.scrollTop-b.clientHeight<90}
+function stick(){const b=$('#cm');pinned=true;const go=()=>{if(pinned)b.scrollTop=b.scrollHeight};go();requestAnimationFrame(go);[80,300,700].forEach(t=>setTimeout(go,t))}
 function draw(list){const box=$('#cm');let prev=0;
- const peer=cv?cv.img:null,pn=cv?cv.name:'';
+ const peer=cv?cv.img:null,pn=cv?cv.name:'',top=box.scrollTop,grew=list.length>lastN,mineLast=list.length&&list[list.length-1].me;
  box.innerHTML=list.map(m=>{
   const s=m.at&&m.at-prev>6e5?`<div class="stp">${esc(stamp(m.at))}</div>`:'';if(m.at)prev=m.at;
   const img=m.me?me.avatar_url:(m.img!==undefined?m.img:peer),nm=m.me?me.display_name:pn;
   const uid=m.me?me.id:(m.uid!==undefined?m.uid:(cv?cv.pid:''));
-  return s+`<div class="m${m.me?' me':''}${sel===m.k?' sel':''}" data-k="${m.k}"><div class="mav"${uid?` data-u="${esc(uid)}"`:''}${img?` style="background-image:url('${esc(img)}')"`:''}>${img?'':esc((nm||'?')[0].toUpperCase())}</div><div class="mc"><div class="b${m.link?' aa':''}${m.pic?' ph':''}">${m.pic?`<a href="${esc(m.pic)}" target="_blank" rel="noopener"><img src="${esc(m.pic)}" alt="" loading="lazy"></a>`:m.link?linkHTML(m.link):esc(m.t)}</div>${m.del?`<button class="x" data-k="${m.k}">Delete</button>`:''}</div></div>`}).join('');
- if(list.length!==lastN){box.scrollTop=box.scrollHeight;lastN=list.length}}
+  return s+`<div class="m${m.me?' me':''}${selSet.has(m.k)?' on':''}" data-k="${m.k}" data-d="${m.del?1:0}"><div class="ck"></div><div class="mav"${uid?` data-u="${esc(uid)}"`:''}${img?` style="background-image:url('${esc(img)}')"`:''}>${img?'':esc((nm||'?')[0].toUpperCase())}</div><div class="mc"><div class="b${m.link?' aa':''}${m.pic?' ph':''}">${m.pic?`<a href="${esc(m.pic)}" target="_blank" rel="noopener"><img src="${esc(m.pic)}" alt="" decoding="async"></a>`:m.link?linkHTML(m.link):esc(m.t)}</div></div></div>`}).join('');
+ if(lastN===-1||(grew&&(pinned||mineLast)))stick();else if(pinned)box.scrollTop=box.scrollHeight;else box.scrollTop=top;
+ lastN=list.length}
 async function loadDM(){if(!cv||!cv.id.startsWith('dm:'))return;const id=cv.id;
  const {data,error}=await sb.from('messages').select('id,sender_id,body,created_at').eq('user_id',id.slice(3)).order('created_at');
  if(!cv||cv.id!==id||error)return;const sig=(data||[]).map(m=>m.id).join(',');if(sig===lastSig)return;lastSig=sig;
  markRead(id);draw((data||[]).map(m=>({k:'d'+m.id,me:m.sender_id===me.id,t:m.body,pic:m.body.startsWith('[img]')?m.body.slice(5):null,at:+new Date(m.created_at),del:m.sender_id===me.id||me.role==='owner'})))}
 async function loadN(){const {data}=await sb.from('notices').select('id,body,created_at').order('created_at');
  markRead('not');draw((data||[]).map(m=>({k:'n'+m.id,t:m.body,at:+new Date(m.created_at),img:ownerP&&ownerP.avatar_url||null,uid:ownerP&&ownerP.id||'',del:me.role==='owner'})))}
-$('#cm').onclick=async e=>{
- const x=e.target.closest('.x');if(x){delMsg(x.dataset.k);return}
- const av=e.target.closest('.mav[data-u]');if(av){showProfile(av.dataset.u);return}
- if(e.target.closest('a'))return;const m=e.target.closest('.m');if(!m)return;
- sel=sel===m.dataset.k?null:m.dataset.k;
- document.querySelectorAll('#cm .m').forEach(n=>n.classList.toggle('sel',n.dataset.k===sel))};
-async function delMsg(k){
- if(!confirm('Delete this message?'))return;const id=+k.slice(1);sel=null;
- if(k[0]==='b'){bm=bm.filter(m=>m.k!==k);draw(bm);return}
- const q=k[0]==='d'?sb.from('messages'):sb.from('notices');
- const {data,error}=await q.delete().eq('id',id).select('id');
- if(error||!data||!data.length){err('Could not delete');return}
- lastSig='';k[0]==='d'?loadDM():loadN()}
+function paintSel(){$('#cm').classList.toggle('selm',selMode);
+ document.querySelectorAll('#cm .m').forEach(n=>n.classList.toggle('on',selSet.has(n.dataset.k)));
+ $('#cf').hidden=selMode||!cv||cv.id==='not';$('#selbar').hidden=!selMode;
+ $('#selc').textContent=selSet.size?selSet.size+' selected':'Select messages';
+ $('#seld').disabled=!selSet.size;$('#seld').style.opacity=selSet.size?1:.5}
+function enterSel(k){$('#ci').blur();selMode=true;selSet=new Set(k?[k]:[]);paintSel()}
+function exitSel(){selMode=false;selSet=new Set();paintSel()}
+function toggleSel(k){selSet.has(k)?selSet.delete(k):selSet.add(k);paintSel()}
+$('#selx').onclick=exitSel;
+$('#seld').onclick=()=>{if(!selSet.size)return;if(confirm('Delete '+selSet.size+' message'+(selSet.size>1?'s':'')+'?'))delKeys([...selSet])};
+function openSheet(k){$('#ci').blur();shK=k;shAt=Date.now();$('#sheet').classList.add('on')}
+function closeSheet(){$('#sheet').classList.remove('on');shK=null}
+$('#sheet').onclick=e=>{if(Date.now()-shAt<450)return;const id=e.target.id,k=shK;
+ if(id==='sh-del'){closeSheet();delKeys([k])}
+ else if(id==='sh-sel'){closeSheet();enterSel(k)}
+ else if(id==='sh-x'||e.target===$('#sheet'))closeSheet()};
+async function delKeys(keys){if(!cv)return;const id=cv.id;let bad=false;
+ const bk=keys.filter(k=>k[0]==='b'),dk=keys.filter(k=>k[0]==='d').map(k=>+k.slice(1)),nk=keys.filter(k=>k[0]==='n').map(k=>+k.slice(1));
+ if(bk.length)bm=bm.filter(m=>!bk.includes(m.k));
+ if(dk.length){const r=await sb.from('messages').delete().in('id',dk).select('id');if(r.error||!r.data||r.data.length<dk.length)bad=true}
+ if(nk.length){const r=await sb.from('notices').delete().in('id',nk).select('id');if(r.error||!r.data||r.data.length<nk.length)bad=true}
+ if(bad)err('Some messages could not be deleted');
+ if(!cv||cv.id!==id)return;exitSel();lastSig='';id==='bot'?draw(bm):id==='not'?loadN():loadDM()}
+/* long press = menu, tap = toggle in select mode */
+const cmEl=$('#cm');
+cmEl.addEventListener('pointerdown',e=>{longFired=false;clearTimeout(pressT);
+ const m=e.target.closest('.m');if(!m||e.target.closest('.mav'))return;pressXY=[e.clientX,e.clientY];
+ pressT=setTimeout(()=>{if(m.dataset.d!=='1')return;longFired=true;if(navigator.vibrate)navigator.vibrate(10);selMode?toggleSel(m.dataset.k):openSheet(m.dataset.k)},450)});
+cmEl.addEventListener('pointermove',e=>{if(pressXY&&Math.hypot(e.clientX-pressXY[0],e.clientY-pressXY[1])>10)clearTimeout(pressT)});
+['pointerup','pointercancel','pointerleave'].forEach(n=>cmEl.addEventListener(n,()=>clearTimeout(pressT)));
+cmEl.addEventListener('contextmenu',e=>e.preventDefault());
+cmEl.addEventListener('scroll',()=>{pinned=near()},{passive:true});
+cmEl.addEventListener('load',e=>{if(pinned&&e.target.tagName==='IMG')cmEl.scrollTop=cmEl.scrollHeight},true);
+if(window.ResizeObserver)new ResizeObserver(()=>{if(pinned)cmEl.scrollTop=cmEl.scrollHeight}).observe(cmEl);
+cmEl.onclick=e=>{
+ if(longFired){longFired=false;e.preventDefault();e.stopPropagation();return}
+ const m=e.target.closest('.m');
+ if(selMode){e.preventDefault();if(m&&m.dataset.d==='1')toggleSel(m.dataset.k);return}
+ const av=e.target.closest('.mav[data-u]');if(av)showProfile(av.dataset.u)};
 $('#cf').onsubmit=async e=>{e.preventDefault();const v=$('#ci').innerText.trim();if(!v||!cv)return;$('#ci').textContent='';
  if(cv.id==='bot'){botSay(v);return}
- if(cv.id.startsWith('dm:')){
+ if(cv.id.startsWith('dm:')){pinned=true;
   const r=await sb.from('messages').insert({user_id:cv.id.slice(3),sender_id:me.id,body:v});
   if(r.error){$('#ci').textContent=v;err('Could not send');return}lastSig='';loadDM()}};
 try{$('#ci').contentEditable='plaintext-only'}catch(e){}if($('#ci').contentEditable!=='plaintext-only')$('#ci').contentEditable='true';
@@ -437,11 +539,11 @@ $('#ci').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preve
 $('#cf .snd').addEventListener('pointerdown',e=>e.preventDefault());
 $('#cimb').onclick=()=>$('#cim').click();
 $('#cim').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f||!cv||!cv.id.startsWith('dm:'))return;
- try{err('Sending photo...');const b=await jpeg(f,1080,false),path=me.id+'/'+Date.now()+'.jpg';
-  const u=await sb.storage.from('chat').upload(path,b,{contentType:'image/jpeg'});if(u.error)throw u.error;
+ try{err('Sending photo...');const p=await prep(f,1080,false),path=me.id+'/'+Date.now()+'.'+p.ext;
+  const u=await sb.storage.from('chat').upload(path,p.b,{contentType:p.type});if(u.error)throw u.error;
   const url=sb.storage.from('chat').getPublicUrl(path).data.publicUrl;
   const r=await sb.from('messages').insert({user_id:cv.id.slice(3),sender_id:me.id,body:'[img]'+url});if(r.error)throw r.error;
-  $('#cerr').textContent='';lastSig='';loadDM()}catch(x){err('Could not send photo')}};
+  $('#cerr').textContent='';pinned=true;lastSig='';loadDM()}catch(x){err(x&&x.message&&/GIF/.test(x.message)?x.message:'Could not send photo')}};
 async function botSay(v){
  bm.push({k:'b'+(++bn),me:1,t:v,at:Date.now(),del:1});draw(bm);
  const {data,error}=await sb.rpc('claim_code',{p_pw:v});
